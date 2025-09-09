@@ -55,7 +55,7 @@ To run this project, you will need a Python environment and a modern web browser
 
 1. Clone the repository:
 
-    ``git clone <repository-url>``
+    ``git clone https://github.com/Wallace-Tan/commentsense``
 
 2. Install backend dependencies:
 
