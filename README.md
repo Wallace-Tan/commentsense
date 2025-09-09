@@ -1,4 +1,4 @@
-# 📊 CQS Performance Dashboard
+# 📊 CommentSense CQS Performance Dashboard
 ## 1. Project Overview 🎯
 This project provides a web-based analytics dashboard designed to measure the true quality of audience engagement on social media content. Standard metrics like likes and views are insufficient as they don't capture the sentiment or relevance of audience conversations. This solution moves beyond vanity metrics by analyzing the comment sections of videos to provide deep, actionable insights for marketing strategy.
 
