@@ -55,21 +55,31 @@ To run this project, you will need a Python environment and a modern web browser
 
 1. Clone the repository:
 
-    ``git clone https://github.com/Wallace-Tan/commentsense``
+    `git clone https://github.com/Wallace-Tan/commentsense`
 
 2. Install backend dependencies:
 
-    ``pip install -r requirements.txt``
+    `pip install -r requirements.txt`
 
 3. Run the data processing script:
 
-    ``python process_data.py``
+    `python process_data.py`
 
-    This will generate the final output.json file.
+    This will generate the final ``output.json`` file.
 
 4. Launch the frontend:
 
-    Navigate to the frontend directory and follow the instructions in its README file (e.g., npm install and npm start).
+    - Navigate into the project's frontend directory.
+
+    - Install the necessary packages using npm:
+        
+        `npm install`
+        
+    - Start the development server. Common commands are npm start or npm run dev:
+        
+        `npm run dev`
+        
+    - Once the server is running, open your web browser and navigate to the local address provided, which is typically [http://localhost:3000](http://localhost:3000).
 
 ## 6. Future Enhancements 🔮
 - 🧠 AI-Powered Insights: Integrate an LLM (e.g., GPT) to automatically generate executive summaries and strategic recommendations.
