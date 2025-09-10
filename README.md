@@ -4,7 +4,7 @@ This project provides a web-based analytics dashboard designed to measure the tr
 
 The core of this project is the Comment Quality Score (CQS), a proprietary metric that grades each video's comment section on a scale of -1 to 1, offering an instant health check of the online discussion.
 
-Live Demo : [https://commentsense-green.vercel.app/]([url](https://commentsense-green.vercel.app/)) 
+Live Demo : [https://commentsense-green.vercel.app/]([https://commentsense-green.vercel.app/])
 Pitch Deck : 
 
 ## 2. Key Features ✨
