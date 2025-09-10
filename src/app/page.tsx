@@ -145,14 +145,31 @@ type DonutChartCardProps = {
     description: string;
 };
 
-const DonutChartCard = ({ title, data, colors, description }: DonutChartCardProps) => (
+const DonutChartCard = ({ title, data, colors, description }: DonutChartCardProps) => {
+    const sortedData = useMemo(() => {
+        return [...data].sort((a, b) => b.value - a.value);
+    }, [data]);
+
+    return (
         <Card>
             <CardTitle>{title}</CardTitle>
             <div style={{ width: '100%', height: '85%' }}>
                 <ResponsiveContainer>
                     <PieChart>
-                        <Pie data={data} cx="50%" cy="45%" innerRadius={60} outerRadius={80} fill="#8884d8" paddingAngle={3} dataKey="value" nameKey="name" labelLine={false} label={({ percent }) => percent !== undefined ? `${(percent * 100).toFixed(0)}%` : ''}>
-                            {data.map((entry, index) => <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />)}
+                        <Pie 
+                            data={sortedData} 
+                            cx="50%" 
+                            cy="50%" 
+                            innerRadius={60} 
+                            outerRadius={80} 
+                            fill="#8884d8" 
+                            paddingAngle={3} 
+                            dataKey="value" 
+                            nameKey="name" 
+                            labelLine={false} 
+                            label={({ percent }) => percent !== undefined ? `${(percent * 100).toFixed(0)}%` : ''}
+                        >
+                            {sortedData.map((entry, index) => <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />)}
                         </Pie>
                         <Tooltip formatter={(value, name) => [`${value} ${description}`, name]}/>
                         <Legend iconType="circle" iconSize={8} wrapperStyle={{ marginBottom: '0px' }}/>
@@ -161,6 +178,7 @@ const DonutChartCard = ({ title, data, colors, description }: DonutChartCardProp
             </div>
         </Card>
     );
+};
 
 type NextMonthFocusProps = {
     data: {
@@ -211,7 +229,6 @@ export default function DashboardPage() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // The JSON file must be in the /public directory
                 const response = await fetch('/output.json');
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
