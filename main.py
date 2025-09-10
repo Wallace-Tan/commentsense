@@ -4,39 +4,41 @@ import json
 import os
 from datetime import datetime, timedelta
 
-def calculate_cqs_from_csv(file_path):
+def create_dashboard_json(comments_file):
     """
-    Calculates Engagement Score and Comment Quality Score (CQS) for each video
-    from a CSV file of comment data.
+    Loads a comprehensive merged comments file, calculates CQS and other metrics,
+    and generates the final JSON for the dashboard.
     """
-    engagement_weights = {'like': 2, 'favorite': 4, 'comment': 6}
-    cqs_weights = {'sentiment': 5, 'relevance': 3, 'engagement': 2}
-
+    # --- 1. Load the Merged Comments Data ---
     try:
-        df = pd.read_csv(file_path)
-    except FileNotFoundError:
-        print(f"Error: The file '{file_path}' was not found.")
-        return None
+        df = pd.read_csv(comments_file)
+        print("Merged comments file loaded successfully.")
+    except FileNotFoundError as e:
+        print(f"Error: {e}. Please ensure the merged CSV is in the 'data/' directory.")
+        return
 
-    # Ensure necessary columns are numeric, coercing errors
-    numeric_cols = ['viewCount', 'likeCount_y', 'favouriteCount']
-    for col in numeric_cols:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
-    df.dropna(subset=numeric_cols, inplace=True) 
+    # --- 2. Calculate Comment Quality Score (CQS) and Aggregate Data ---
+    print("Calculating CQS and aggregating data...")
 
+    engagement_weights = {'like': 1, 'favorite': 2, 'comment': 3}
+    cqs_weights = {'sentiment': 0.5, 'relevance': 0.3, 'engagement': 0.2}
+
+    # Aggregate by video, using the correct column names from your CSV
     video_agg = df.groupby('videoId').agg(
         avg_sentiment=('sentiment_score', 'mean'),
         avg_relevance=('relevancyScore', 'mean'),
         comment_count=('commentId', 'size'),
         view_count=('viewCount', 'first'),
         like_count=('likeCount_y', 'first'),
-        # FIX 1: Changed 'text' to 'title' to match the actual column name in your CSV.
+        favorite_count=('favouriteCount', 'first'),
         title=('title', 'first'),
-        favorite_count=('favouriteCount', 'first')
+        publishedAt=('publishedAt', 'first'),
+        cluster_label=('cluster_label', 'first'),
+        video_type=('video_type', 'first')
     ).reset_index()
 
     def get_engagement_score(row):
-        if row['view_count'] == 0:
+        if row['view_count'] == 0 or pd.isna(row['view_count']):
             return 0.0
         weighted_sum = (
             engagement_weights['like'] * row['like_count'] +
@@ -53,45 +55,22 @@ def calculate_cqs_from_csv(file_path):
             cqs_weights['relevance'] * abs(row['avg_relevance']) +
             cqs_weights['engagement'] * row['engagement_score']
         )
-        return -qms if row['avg_sentiment'] < 0 else qms
+        
+        # Scale the score to be more intuitive (e.g., out of 100)
+        scaled_cqs = qms * 10
+        
+        return -scaled_cqs if row['avg_sentiment'] < 0 else scaled_cqs
 
     video_agg['cqs'] = video_agg.apply(get_cqs, axis=1)
-    
-    return video_agg[['videoId', 'cqs', 'title']]
+    final_df = video_agg.fillna(0) # Ensure no NaN values remain
 
-def create_dashboard_json(cqs_data_file, product_type_file, video_type_file):
-    """
-    Loads all data, calculates CQS, and generates the final JSON.
-    """
-    try:
-        product_type_df = pd.read_csv(product_type_file)
-        video_type_df = pd.read_csv(video_type_file)
-        print("Classification files loaded successfully.")
-    except FileNotFoundError as e:
-        print(f"Error: {e}. Please ensure all CSV files are in the 'data/' directory.")
-        return
+    # --- 3. Prepare Data for JSON Structure ---
+    print("Structuring final JSON...")
 
-    print("Calculating CQS from comment data...")
-    cqs_df = calculate_cqs_from_csv(cqs_data_file)
-    if cqs_df is None:
-        return
-
-    product_type_df['videoId'] = product_type_df['videoId'].astype(str)
-    video_type_df['videoId'] = video_type_df['videoId'].astype(str)
-    cqs_df['videoId'] = cqs_df['videoId'].astype(str)
-
-    merged_df = pd.merge(product_type_df, video_type_df, on='videoId', how='left', suffixes=('_prod', '_vid'))
-    final_df = pd.merge(merged_df, cqs_df, on='videoId', how='left')
-
-    final_df['cqs'] = final_df['cqs'].fillna(0)
-    final_df['title'] = final_df['title'].fillna('Title Not Available')
-    
-    final_df.dropna(subset=['publishedAt'], inplace=True)
-    
     video_cqs_data = [{
         "id": row['videoId'],
         "title": row['title'],
-        "cqs": row['cqs'],
+        "cqs": round(row['cqs'], 1), # Round for cleaner display
         "timestamp": row['publishedAt']
     } for _, row in final_df.iterrows()]
 
@@ -100,8 +79,12 @@ def create_dashboard_json(cqs_data_file, product_type_file, video_type_file):
         history = []
         for i in range(3, 0, -1):
             mock_date = (pd.to_datetime(video['timestamp']) - pd.Timedelta(days=i*7)).strftime('%Y-%m-%d')
-            mock_cqs_change = np.random.uniform(0.1, 0.5)
-            mock_cqs = round(video['cqs'] - mock_cqs_change if video['cqs'] > 0 else video['cqs'] + mock_cqs_change, 2)
+            # Create more realistic variation (+/- 5%) for the history
+            change_factor = np.random.uniform(-0.05, 0.05)
+            mock_cqs = round(video['cqs'] * (1 + change_factor), 1)
+            # Ensure a positive CQS doesn't randomly become negative
+            if video['cqs'] > 0 and mock_cqs < 0:
+                mock_cqs = 0
             history.append({"t": mock_date, "cqs": mock_cqs})
         video_cqs_history[str(video['id'])] = history
 
@@ -119,7 +102,7 @@ def create_dashboard_json(cqs_data_file, product_type_file, video_type_file):
     most_discussed_mentions = product_discussion_data[0]['value']
 
     next_month_focus_data = {
-        "topQualityCommentVideo": {"title": top_video_type, "metric": f"Avg. CQS {avg_cqs_top_type:.2f}"},
+        "topQualityCommentVideo": {"title": top_video_type, "metric": f"Avg. CQS {avg_cqs_top_type:.1f}"},
         "mostDiscussedProduct": {"title": most_discussed_product, "metric": f"{most_discussed_mentions} Mentions"}
     }
 
@@ -139,12 +122,11 @@ def create_dashboard_json(cqs_data_file, product_type_file, video_type_file):
     with open(output_path, 'w') as f:
         json.dump(final_json, f, indent=2)
 
-    print(f"Successfully generated JSON file at: {output_path}")
+    print(f"✅ Successfully generated JSON file at: {output_path}")
 
 # --- MAIN EXECUTION ---
 if __name__ == "__main__":
-    cqs_input_file = 'data/final_comments1.csv' 
-    product_file = 'data/product_type_classified.csv'
-    video_file = 'data/video_type_classified.csv'
+    comments_input_file = 'data/merged.csv'
     
-    create_dashboard_json(cqs_input_file, product_file, video_file)
+    create_dashboard_json(comments_input_file)
+
