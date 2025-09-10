@@ -66,17 +66,27 @@ const VideoTrendChartModal = ({ video, historyData, onClose }: VideoTrendChartMo
         <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-50 p-4 backdrop-blur-sm">
             <Card className="w-full max-w-2xl">
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-gray-800 truncate pr-4" title={video.title}>{video.title}</h3>
+                    {/* FIX: Removed the 'truncate' class to allow the full title to show */}
+                    <h3 className="text-xl font-bold text-gray-800 pr-4">{video.title}</h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
                         <X size={24} />
                     </button>
                 </div>
                 <div style={{ width: '100%', height: 300 }}>
                     <ResponsiveContainer>
-                        <LineChart data={historyData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                        <LineChart data={historyData} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                            <XAxis dataKey="t" tickFormatter={formatXAxis} />
-                            <YAxis domain={[85, 100]} />
+                            
+                            {/* FIX: Added a label for the X-axis */}
+                            <XAxis dataKey="t" tickFormatter={formatXAxis}>
+                                <label value="Date" position="insideBottom" offset={-15} />
+                            </XAxis>
+
+                            {/* FIX: Added a label for the Y-axis */}
+                            <YAxis domain={[85, 100]} >
+                                <label value="CQS" angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
+                            </YAxis>
+
                             <Tooltip />
                             <Line type="monotone" dataKey="cqs" name="CQS" stroke={COLORS[0]} strokeWidth={2} activeDot={{ r: 8 }} />
                         </LineChart>

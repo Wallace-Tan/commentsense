@@ -70,7 +70,7 @@ def create_dashboard_json(comments_file):
     video_cqs_data = [{
         "id": row['videoId'],
         "title": row['title'],
-        "cqs": round(row['cqs'], 1), # Round for cleaner display
+        "cqs": round(row['cqs'], 1), 
         "timestamp": row['publishedAt']
     } for _, row in final_df.iterrows()]
 
@@ -79,10 +79,8 @@ def create_dashboard_json(comments_file):
         history = []
         for i in range(3, 0, -1):
             mock_date = (pd.to_datetime(video['timestamp']) - pd.Timedelta(days=i*7)).strftime('%Y-%m-%d')
-            # Create more realistic variation (+/- 5%) for the history
-            change_factor = np.random.uniform(-0.05, 0.05)
+            change_factor = np.random.uniform(-0.5, 0.15)
             mock_cqs = round(video['cqs'] * (1 + change_factor), 1)
-            # Ensure a positive CQS doesn't randomly become negative
             if video['cqs'] > 0 and mock_cqs < 0:
                 mock_cqs = 0
             history.append({"t": mock_date, "cqs": mock_cqs})
@@ -122,7 +120,7 @@ def create_dashboard_json(comments_file):
     with open(output_path, 'w') as f:
         json.dump(final_json, f, indent=2)
 
-    print(f"✅ Successfully generated JSON file at: {output_path}")
+    print(f"Successfully generated JSON file at: {output_path}")
 
 # --- MAIN EXECUTION ---
 if __name__ == "__main__":
