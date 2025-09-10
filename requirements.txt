@@ -1,0 +1,9 @@
+pandas
+numpy
+wordsegment
+scikit-learn
+nltk
+gensim
+sentence-transformers
+torch
+transformers
