@@ -1,45 +1,44 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { ChevronDown,X, Home, UploadCloud} from 'lucide-react';
+import { ChevronDown, X, Home, UploadCloud } from 'lucide-react';
 
-// --- MOCK DATA (Using existing L'Oréal themed data) --- //
-const videoCqsData = [
-    { id: 1, title: "Unlocking the Benefits of Face Masks for Skin Health", cqs: 98.5, timestamp: "2025-09-08T10:00:00Z" },
-    { id: 2, title: "Skincare for Rosacea: Managing and Soothing Redness", cqs: 97.2, timestamp: "2025-09-07T14:30:00Z" },
-    { id: 3, title: "The Science of Sheet Masks: Instantly Revitalize Your Skin", cqs: 95.8, timestamp: "2025-09-08T11:00:00Z" },
-    { id: 4, title: "The Benefits of Clay Masks: Purify and Detoxify Your Skin", cqs: 94.1, timestamp: "2025-09-06T09:00:00Z" },
-    { id: 5, title: "GRWM: Girls Night Out!! ", cqs: 92.7, timestamp: "2025-09-08T12:00:00Z" },
-];
+// Define interfaces for your data structure for type safety
+interface CQSData {
+    id: number;
+    title: string;
+    cqs: number;
+    timestamp: string;
+}
 
-const videoCqsHistory: { [key: string]: { t: string; cqs: number }[] } = {
-    1: [{ t: "2025-09-01", cqs: 95.2 }, { t: "2025-09-03", cqs: 96.1 }, { t: "2025-09-05", cqs: 97.5 }, { t: "2025-09-08", cqs: 98.5 }],
-    2: [{ t: "2025-09-01", cqs: 94.5 }, { t: "2025-09-03", cqs: 95.8 }, { t: "2025-09-05", cqs: 96.2 }, { t: "2025-09-07", cqs: 97.2 }],
-    3: [{ t: "2025-09-02", cqs: 93.1 }, { t: "2025-09-04", cqs: 94.0 }, { t: "2025-09-06", cqs: 94.9 }, { t: "2025-09-08", cqs: 95.8 }],
-    4: [{ t: "2025-08-30", cqs: 92.0 }, { t: "2025-09-02", cqs: 92.8 }, { t: "2025-09-04", cqs: 93.5 }, { t: "2025-09-06", cqs: 94.1 }],
-    5: [{ t: "2025-09-01", cqs: 90.5 }, { t: "2025-09-03", cqs: 91.1 }, { t: "2025-09-06", cqs: 91.8 }, { t: "2025-09-08", cqs: 92.7 }],
-};
+interface CQSHistory {
+    [key: string]: { t: string; cqs: number }[];
+}
 
-const productDiscussionData = [
-    { name: 'Skincare', value: 450 }, { name: 'Makeup', value: 300 },
-    { name: 'Haircare', value: 250 }, { name: 'Fragrances', value: 200 },
-];
+interface ChartData {
+    name: string;
+    value: number;
+}
 
-const videoTypeData = [
-    { name: 'GRWM', value: 40 }, { name: 'Product Review', value: 25 },
-    { name: 'Makeup Tutorial', value: 15 }, { name: 'Lifestyle', value: 10 },
-];
+interface FocusData {
+    title: string;
+    metric: string;
+}
 
-const nextMonthFocusData = {
-    topQualityCommentVideo: { title: "GRWM", metric: "Avg. CQS 95.5" },
-    mostDiscussedProduct: { title: "Skincare", metric: "450 Mentions" },
-};
+interface DashboardData {
+    videoCqsData: CQSData[];
+    videoCqsHistory: CQSHistory;
+    productDiscussionData: ChartData[];
+    videoTypeData: ChartData[];
+    nextMonthFocusData: {
+        topQualityCommentVideo: FocusData;
+        mostDiscussedProduct: FocusData;
+    };
+}
 
-// --- NEW VIBRANT CHART COLORS --- //
-const COLORS = ['#2563eb', '#f97316', '#10b981', '#8b5cf6', '#ec4899'];
 
-// --- HELPER COMPONENTS --- //
+// --- HELPER COMPONENTS (No changes needed here) --- //
 type CardProps = { children: React.ReactNode; className?: string; };
 const Card = ({ children, className = '' }: CardProps) => (
     <div className={`bg-white rounded-2xl shadow-md p-6 transition-all hover:shadow-lg ${className}`}>{children}</div>
@@ -50,15 +49,18 @@ const CardTitle = ({ children }: CardTitleProps) => (
     <h2 className="text-xl font-semibold text-gray-800 mb-4">{children}</h2>
 );
 
-// --- DASHBOARD COMPONENTS --- //
+const COLORS = ['#2563eb', '#f97316', '#10b981', '#8b5cf6', '#ec4899'];
+
+
+// --- DASHBOARD COMPONENTS (Updated to receive data as props) --- //
 
 type VideoTrendChartModalProps = {
-    video: { id: number; title: string; cqs: number; timestamp: string };
+    video: CQSData;
+    historyData: { t: string; cqs: number }[];
     onClose: () => void;
 };
 
-const VideoTrendChartModal = ({ video, onClose }: VideoTrendChartModalProps) => {
-    const historyData = videoCqsHistory[String(video.id)] || [];
+const VideoTrendChartModal = ({ video, historyData, onClose }: VideoTrendChartModalProps) => {
     const formatXAxis = (tickItem: string) => new Date(tickItem).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     return (
         <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-50 p-4 backdrop-blur-sm">
@@ -86,14 +88,14 @@ const VideoTrendChartModal = ({ video, onClose }: VideoTrendChartModalProps) => 
 };
 
 type VideoCQSRankingProps = {
-    onVideoSelect: (video: { id: number; title: string; cqs: number; timestamp: string }) => void;
+    data: CQSData[];
+    onVideoSelect: (video: CQSData) => void;
 };
 
-const VideoCQSRanking = ({ onVideoSelect }: VideoCQSRankingProps) => {
+const VideoCQSRanking = ({ data, onVideoSelect }: VideoCQSRankingProps) => {
     const [sortOrder, setSortOrder] = useState('cqs');
-
     const sortedData = useMemo(() => {
-        return [...videoCqsData]
+        return [...data]
             .sort((a, b) => {
                 if (sortOrder === 'timestamp') {
                     return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
@@ -101,7 +103,7 @@ const VideoCQSRanking = ({ onVideoSelect }: VideoCQSRankingProps) => {
                 return b.cqs - a.cqs;
             })
             .slice(0, 5);
-    }, [sortOrder]);
+    }, [sortOrder, data]);
 
     return (
         <Card className="flex flex-col">
@@ -138,7 +140,7 @@ const VideoCQSRanking = ({ onVideoSelect }: VideoCQSRankingProps) => {
 
 type DonutChartCardProps = {
     title: string;
-    data: { name: string; value: number }[];
+    data: ChartData[];
     colors: string[];
     description: string;
 };
@@ -160,19 +162,26 @@ const DonutChartCard = ({ title, data, colors, description }: DonutChartCardProp
         </Card>
     );
 
-const NextMonthFocus = () => (
+type NextMonthFocusProps = {
+    data: {
+        topQualityCommentVideo: FocusData;
+        mostDiscussedProduct: FocusData;
+    };
+};
+
+const NextMonthFocus = ({ data }: NextMonthFocusProps) => (
     <Card>
         <CardTitle>Next Month's Focus</CardTitle>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-gray-50 p-5 rounded-lg text-center">
                 <h3 className="font-semibold text-gray-500">Top CQS Video Type</h3>
-                <p className="text-2xl font-bold text-gray-800 truncate mt-2">{nextMonthFocusData.topQualityCommentVideo.title}</p>
-                <p className="text-sm text-gray-500">{nextMonthFocusData.topQualityCommentVideo.metric}</p>
+                <p className="text-2xl font-bold text-gray-800 truncate mt-2">{data.topQualityCommentVideo.title}</p>
+                <p className="text-sm text-gray-500">{data.topQualityCommentVideo.metric}</p>
             </div>
             <div className="bg-gray-50 p-5 rounded-lg text-center">
                 <h3 className="font-semibold text-gray-500">Most Discussed Product</h3>
-                <p className="text-2xl font-bold text-gray-800 truncate mt-2">{nextMonthFocusData.mostDiscussedProduct.title}</p>
-                <p className="text-sm text-gray-500">{nextMonthFocusData.mostDiscussedProduct.metric}</p>
+                <p className="text-2xl font-bold text-gray-800 truncate mt-2">{data.mostDiscussedProduct.title}</p>
+                <p className="text-sm text-gray-500">{data.mostDiscussedProduct.metric}</p>
             </div>
         </div>
     </Card>
@@ -194,12 +203,40 @@ const Sidebar = () => (
 
 // --- Main Page Component --- //
 export default function DashboardPage() {
-    const [selectedVideo, setSelectedVideo] = useState<{
-        id: number;
-        title: string;
-        cqs: number;
-        timestamp: string;
-    } | null>(null);
+    const [data, setData] = useState<DashboardData | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [selectedVideo, setSelectedVideo] = useState<CQSData | null>(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // The JSON file must be in the /public directory
+                const response = await fetch('/output.json');
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const jsonData: DashboardData = await response.json();
+                setData(jsonData);
+            } catch (error) {
+                setError('Failed to fetch dashboard data. Please ensure output.json exists in the /public folder.');
+                console.error(error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []); 
+
+    if (loading) {
+        return <div className="flex items-center justify-center min-h-screen">Loading dashboard...</div>;
+    }
+
+    if (error || !data) {
+        return <div className="flex items-center justify-center min-h-screen text-red-500">{error || 'No data available.'}</div>;
+    }
+
     return (
         <div className="flex bg-gray-50 min-h-screen">
             <Sidebar />
@@ -213,20 +250,19 @@ export default function DashboardPage() {
                 
                 <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-1">
-                        <VideoCQSRanking onVideoSelect={setSelectedVideo} />
+                        <VideoCQSRanking data={data.videoCqsData} onVideoSelect={setSelectedVideo} />
                     </div>
                     <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <DonutChartCard title="Product Discussion" data={productDiscussionData} colors={COLORS} description={'mentions'}/>
-                        <DonutChartCard title="Video Type Distribution" data={videoTypeData} colors={COLORS.slice().reverse()} description={'videos'}/>
+                        <DonutChartCard title="Product Discussion" data={data.productDiscussionData} colors={COLORS} description={'mentions'}/>
+                        <DonutChartCard title="Video Type Distribution" data={data.videoTypeData} colors={COLORS.slice().reverse()} description={'videos'}/>
                     </div>
                     <div className="lg:col-span-3">
-                       <NextMonthFocus />
+                       <NextMonthFocus data={data.nextMonthFocusData} />
                     </div>
                 </main>
             </div>
             
-            {selectedVideo && <VideoTrendChartModal video={selectedVideo} onClose={() => setSelectedVideo(null)} />}
+            {selectedVideo && <VideoTrendChartModal video={selectedVideo} historyData={data.videoCqsHistory[String(selectedVideo.id)] || []} onClose={() => setSelectedVideo(null)} />}
         </div>
     );
 }
-
