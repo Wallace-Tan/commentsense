@@ -6,7 +6,7 @@ The core of this project is the Comment Quality Score (CQS), a proprietary metri
 
 Live Demo : [https://commentsense-green.vercel.app/](https://commentsense-green.vercel.app/)
 
-Pitch Deck : 
+Pitch Deck : [LINK](https://www.canva.com/design/DAGyg0jy7o4/K1SOt4rYHZ3DS8fYcAI2Tg/view?utm_content=DAGyg0jy7o4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h2a43174997)
 
 ## 2. Key Features ✨
 
